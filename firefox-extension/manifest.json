@@ -11,6 +11,8 @@
     "webRequest",
     "webNavigation",
     "history",
+    "tabs",
+    "idle",
     "<all_urls>"
   ],
 
