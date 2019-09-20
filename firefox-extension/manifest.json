@@ -20,5 +20,13 @@
     "scripts": [
       "background_script.js"
     ]
-  }
+  },
+
+  "browser_action": {
+    "browser_style": true,
+    "default_icon": "icons/icon.png",
+    "default_title": "Track My Time"
+  },
+
+  "content_security_policy": "script-src 'self' ; object-src 'self';"
 }

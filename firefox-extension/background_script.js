@@ -1,4 +1,16 @@
 //
+// Send the data to the web service
+//
+function sendData(params){
+    // For sending data to the service
+    var xhttp = new XMLHttpRequest();
+    var url = "http://localhost:9999/storeActivity?";
+    xhttp.open("GET", url + params, true);
+    xhttp.send();
+    // console.log("Data sent to " + url + params);
+}
+
+//
 // Only one webpage can be viewed by the user at a time.
 //
 const curr_page = {
@@ -21,8 +33,10 @@ function logVisit(event) {
 
     curr_url = new URL(event.url);
 
+    params = null;
+
     // Check if it is an actual website and not something like "about:profiles"
-    if (curr_url.hostname != ""){
+    if (curr_url.hostname != "" && curr_url.hostname.includes('.')){
         // console.log("Loading: " + curr_url.hostname + " at " + event.timeStamp);
 
         // Check if the curr_page is null
@@ -37,7 +51,12 @@ function logVisit(event) {
         }
         else {
             // Info about old page
-            console.log(curr_page.top_url + " was viewed for " + ((event.timeStamp-curr_page.opened_time)/1000) + " seconds.");
+            timespent = (event.timeStamp-curr_page.opened_time)/1000;
+            console.log(curr_page.top_url + " was viewed for " + timespent + " seconds.");
+
+            // Send to web service
+            params = "url=" + curr_page.top_url + "&timeSpent=" + timespent;
+            sendData(params);
 
             // Transition to new page
             curr_page.top_url = curr_url.hostname;
@@ -54,7 +73,12 @@ function tabClosed(tabId, removeInfo){
     // Check if tab being closed is in the one being viewed right now
     if (tabId == curr_page.tabId){
         // Info about old page
-        console.log(curr_page.top_url + " was viewed for " + (((new Date).getTime()-curr_page.opened_time)/1000) + " seconds.");
+        timespent = ((new Date).getTime()-curr_page.opened_time)/1000;
+        console.log(curr_page.top_url + " was viewed for " + timespent + " seconds.");
+
+        // Send to web service
+        params = "url=" + curr_page.top_url + "&timeSpent=" + timespent;
+        sendData(params);
 
         // No page is open right now
         curr_page.top_url = null;
@@ -72,7 +96,7 @@ async function tabChanged(activeInfo){
     time = (new Date).getTime();
     curr_url = new URL(tab.url);
 
-    if (curr_url.hostname != ""){
+    if (curr_url.hostname != "" && curr_url.hostname.includes('.')){
         // Check if the curr_page is null
         if (curr_page.top_url == null){
             // Simply assign it (first time a page is being opened)
@@ -86,7 +110,12 @@ async function tabChanged(activeInfo){
         }
         else {
             // Info about old page
-            console.log(curr_page.top_url + " was viewed for " + ((time-curr_page.opened_time)/1000) + " seconds.");
+            timespent = (time-curr_page.opened_time)/1000;
+            console.log(curr_page.top_url + " was viewed for " + timespent + " seconds.");
+
+            // Send to web service
+            params = "url=" + curr_page.top_url + "&timeSpent=" + timespent;
+            sendData(params);
 
             // Transition to new page
             curr_page.top_url = curr_url.hostname;
@@ -98,7 +127,12 @@ async function tabChanged(activeInfo){
     else {
         if (curr_page.top_url != null){
             // Info about old page
-            console.log(curr_page.top_url + " was viewed for " + ((time-curr_page.opened_time)/1000) + " seconds.");
+            timespent = (time-curr_page.opened_time)/1000;
+            console.log(curr_page.top_url + " was viewed for " + timespent + " seconds.");
+
+            // Send to web service
+            params = "url=" + curr_page.top_url + "&timeSpent=" + timespent;
+            sendData(params);
 
             // Transition to new page
             curr_page.top_url = null;
@@ -140,7 +174,12 @@ function windowChanged(windowId){
     else if (windowId != curr_page.windowId){
         if (curr_page.top_url != null){
             // Info about old page
-            console.log(curr_page.top_url + " was viewed for " + ((time-curr_page.opened_time)/1000) + " seconds.");
+            timespent = (time-curr_page.opened_time)/1000;
+            console.log(curr_page.top_url + " was viewed for " + timespent + " seconds.");
+
+            // Send to web service
+            params = "url=" + curr_page.top_url + "&timeSpent=" + timespent;
+            sendData(params);
 
             // Transition to new page
             curr_page.top_url = null;
@@ -161,7 +200,12 @@ function browserStateChanged(newState){
     if (newState == "locked" || newState == "idle"){
         if (curr_page.top_url != null){
             // Info about old page
-            console.log(curr_page.top_url + " was viewed for " + ((time-curr_page.opened_time)/1000) + " seconds.");
+            timespent = (time-curr_page.opened_time)/1000;
+            console.log(curr_page.top_url + " was viewed for " + timespent + " seconds.");
+
+            // Send data to web service
+            params = "url=" + curr_page.top_url + "&timeSpent=" + timespent;
+            sendData(params);
 
             // Transition to new page
             curr_page.top_url = null;
@@ -206,3 +250,24 @@ browser.windows.onFocusChanged.addListener(windowChanged);
 // 3) "active" when the user generates input on an idle system.
 //
 browser.idle.onStateChanged.addListener(browserStateChanged);
+
+// ----------------------------------------------------------------------------------------
+// -----------------------------------Toolbar Button---------------------------------------
+// ----------------------------------------------------------------------------------------
+browser.browserAction.onClicked.addListener(showExtensionPage);
+
+function showExtensionPage(){
+    var creating = browser.tabs.create({
+        active: true,
+        url: "/track_my_time.html"
+    });
+    creating.then(onCreated, onError);
+}
+
+function onCreated(tab) {
+    console.log(`Created new tab: ${tab.id}`)
+}
+
+function onError(error) {
+    console.log(`Error: ${error}`);
+}
